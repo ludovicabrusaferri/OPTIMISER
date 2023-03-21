@@ -11,9 +11,16 @@ def loglikelihood(prob):
      return loglikelihood
 
 def loglikelihoodregression(meas,model,sigma):
-     var = (meas - model) / sigma
-     arr = - np.power(var,2) / 2 - np.log(sigma) - np.log(2 * np.pi) / 2
+     temp = (meas - model) / sigma
+     arr = - np.power(temp,2) / 2 - np.log(sigma) - np.log(2 * np.pi) / 2
      return np.sum(arr)
+
+def loglikelihoodregressionwitheps(meas,model,sigma,eps):
+    sigma = sigma + eps
+    temp = (meas - model) / sigma
+    arr = - np.power(temp,2) / 2 - np.log(sigma) - np.log(2 * np.pi) / 2
+    return np.sum(arr)
+
 
 value = loglikelihoodregression(measures,model,sigma)
 print(value)

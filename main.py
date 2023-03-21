@@ -21,6 +21,9 @@ def loglikelihoodregressionwitheps(meas,model,sigma,eps):
     arr = - np.power(temp,2) / 2 - np.log(sigma) - np.log(2 * np.pi) / 2
     return np.sum(arr)
 
+def poissonloglikelihood(meas,model):
+    arr = meas * np.log(model) - model
+    return np.sum(arr)
 
 value = loglikelihoodregression(measures,model,sigma)
 print(value)

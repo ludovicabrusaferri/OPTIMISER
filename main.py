@@ -40,10 +40,17 @@ def loglikelihoodlogisticregression(meas,model,beta):
     # https://arunaddagatla.medium.com/maximum-likelihood-estimation-in-logistic-regression-f86ff1627b67
     return np.sum(meas*beta*model - np.log(1 + np.exp(beta*model)))
 
+def loglikelihoodmixturelogisticregression(meas,model,beta,alpha):
+    return np.sum(np.sum(alpha*(meas*beta*model - np.log(1 + np.exp(beta*model)))))
+
 
 #value = KLgaussian(0,0,1,1)
 #value = KLgaussianForMeanZeroAndStdOne(0,1)
-value = loglikelihoodlogisticregression(0,1,1)
+meas=np.array([1, 2, 3])
+model=np.array([1, 2, 3])
+beta=np.array([1, 1, 3])
+alpha=np.array([1, 1, 3])
+value = loglikelihoodmixturelogisticregression(meas,model,beta,alpha)
 print(value)
 
 

@@ -1,6 +1,7 @@
 # Author: Ludovica Brusaferri
 import os
 import numpy as np
+import tensorflow as tf 
 
 measures = np.random.rand(28,1)
 model = np.random.rand(28,1)
@@ -45,19 +46,38 @@ def logistic_mixture_log_likelihood(meas,model,beta,alpha):
     # meas, mode, alpha and beta must have the same lenght
     return np.sum(np.sum(alpha*(np.sum(meas*beta*model - np.log(1 + np.exp(beta*model))))))
   
+
 def discretized_logistic_mixture_log_likelihood(meas, model, beta, alpha, threshold=0.5):
     probs = 1 / (1 + np.exp(-(meas * beta * model)))
+    epsilon = np.finfo(float).eps  # Get the machine epsilon for the dtype
     y_pred = (probs >= threshold).astype(int)
-    return np.sum(alpha * (np.log(probs) * y_pred + np.log(1 - probs) * (1 - y_pred)))
+    return np.sum(alpha * (np.log(probs) * y_pred + np.log(1 - probs + epsilon) * (1 - y_pred)))
+
+
+def TF_discretized_logistic_mixture_log_likelihood(meas, model, beta, alpha, threshold=0.5):
+    probs = 1 / (1 + tf.exp(-(meas * beta * model)))
+    epsilon = tf.keras.backend.epsilon()  # Get the machine epsilon for the dtype
+    y_pred = tf.cast(probs >= threshold, dtype=tf.float32)
+    return tf.reduce_sum(alpha * (tf.math.log(probs) * y_pred + tf.math.log(1 - probs + epsilon) * (1 - y_pred)))
+
+
 
 # Example usage
-meas = np.array([[1, 2, 3], [4, 5, 6]])
-model = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+meas = np.array([[1, 2, 3], [3, 5, 6]])
+model = np.array([[0.1, 0.2, 0.3], [0.1, 0.5, 0.6]])
 beta = np.array([[1, 2, 3], [4, 5, 6]])
 alpha = np.array([[1, 2, 3], [4, 5, 6]])
 
 result = discretized_logistic_mixture_log_likelihood(meas, model, beta, alpha)
 print("Discretized Mixture Model Log Likelihood:", result)
+
+meas_tensor = tf.convert_to_tensor(meas, dtype=tf.float32)
+model_tensor = tf.convert_to_tensor(model, dtype=tf.float32)
+beta_tensor = tf.convert_to_tensor(beta, dtype=tf.float32)
+alpha_tensor = tf.convert_to_tensor(alpha, dtype=tf.float32)
+
+result = TF_discretized_logistic_mixture_log_likelihood(meas_tensor, model_tensor, beta_tensor, alpha_tensor)
+print("TF Discretized Mixture Model Log Likelihood:", result.numpy())
 
 
 

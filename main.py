@@ -42,19 +42,17 @@ def loglikelihoodlogisticregression(meas,model,beta):
 
 def loglikelihoodmixturelogisticregression(meas,model,beta,alpha):
     # https://arxiv.org/pdf/1802.10529.pdf
-    # alpha and beta must have the same lenght
-    temp=np.zeros(meas.shape)
-    for k in range(len(alpha)):
-        temp+=alpha[k]*(meas*beta[k]*model - np.log(1 + np.exp(beta[k]*model)))    
-    return np.sum(temp)
+    # meas, mode, alpha and beta must have the same lenght
+    return np.sum(np.sum(alpha*(np.sum(meas*beta*model - np.log(1 + np.exp(beta*model))))))
+  
 
 
 #value = KLgaussian(0,0,1,1)
 #value = KLgaussianForMeanZeroAndStdOne(0,1)
 meas=np.array([1, 2, 3])
 model=np.array([1, 2, 3])
-beta=np.array([1, 1])
-alpha=np.array([1, 1])
+beta=np.array([1, 1, 1])
+alpha=np.array([1, 1, 1])
 value = loglikelihoodmixturelogisticregression(meas,model,beta,alpha)
 print(value)
 

@@ -36,16 +36,16 @@ def KLgaussianForMeanZeroAndStdOne(mean,sigma):
     return np.log( 1 / sigma ) + ( np.power(sigma,2) + np.power((mean),2) )/ 2 - 1/2
 
 
-def loglikelihoodlogisticregression(meas,model,beta):
+def logistic_mixture_log_likelihood(meas,model,beta):
     # https://arunaddagatla.medium.com/maximum-likelihood-estimation-in-logistic-regression-f86ff1627b67
     return np.sum(meas*beta*model - np.log(1 + np.exp(beta*model)))
 
-def loglikelihoodmixturelogisticregression(meas,model,beta,alpha):
+def logistic_mixture_log_likelihood(meas,model,beta,alpha):
     # https://arxiv.org/pdf/1802.10529.pdf
     # meas, mode, alpha and beta must have the same lenght
     return np.sum(np.sum(alpha*(np.sum(meas*beta*model - np.log(1 + np.exp(beta*model))))))
   
-def discretized_mixture_log_likelihood(meas, model, beta, alpha, threshold=0.5):
+def discretized_logistic_mixture_log_likelihood(meas, model, beta, alpha, threshold=0.5):
     probs = 1 / (1 + np.exp(-(meas * beta * model)))
     y_pred = (probs >= threshold).astype(int)
     return np.sum(alpha * (np.log(probs) * y_pred + np.log(1 - probs) * (1 - y_pred)))
@@ -55,9 +55,8 @@ meas = np.array([[1, 2, 3], [4, 5, 6]])
 model = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
 beta = np.array([[1, 2, 3], [4, 5, 6]])
 alpha = np.array([[1, 2, 3], [4, 5, 6]])
-threshold = 0.5
 
-result = discretized_mixture_log_likelihood(meas, model, beta, alpha, threshold)
+result = discretized_logistic_mixture_log_likelihood(meas, model, beta, alpha)
 print("Discretized Mixture Model Log Likelihood:", result)
 
 

@@ -45,16 +45,48 @@ def loglikelihoodmixturelogisticregression(meas,model,beta,alpha):
     # meas, mode, alpha and beta must have the same lenght
     return np.sum(np.sum(alpha*(np.sum(meas*beta*model - np.log(1 + np.exp(beta*model))))))
   
+def discretized_mixture_log_likelihood(meas, model, beta, alpha, threshold=0.5):
+    probs = 1 / (1 + np.exp(-(meas * beta * model)))
+    y_pred = (probs >= threshold).astype(int)
+    return np.sum(alpha * (np.log(probs) * y_pred + np.log(1 - probs) * (1 - y_pred)))
+
+# Example usage
+meas = np.array([[1, 2, 3], [4, 5, 6]])
+model = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+beta = np.array([[1, 2, 3], [4, 5, 6]])
+alpha = np.array([[1, 2, 3], [4, 5, 6]])
+threshold = 0.5
+
+result = discretized_mixture_log_likelihood(meas, model, beta, alpha, threshold)
+print("Discretized Mixture Model Log Likelihood:", result)
 
 
-#value = KLgaussian(0,0,1,1)
-#value = KLgaussianForMeanZeroAndStdOne(0,1)
-meas=np.array([1, 2, 3])
-model=np.array([1, 2, 3])
-beta=np.array([1, 1, 1])
-alpha=np.array([1, 1, 1])
-value = loglikelihoodmixturelogisticregression(meas,model,beta,alpha)
-print(value)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

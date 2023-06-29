@@ -35,8 +35,15 @@ def KLgaussianForMeanZeroAndStdOne(mean,sigma):
     # 𝐾𝐿(𝑝,𝑞)=log𝜎2𝜎1+𝜎21+(𝜇1−𝜇2)22𝜎22−12
     return np.log( 1 / sigma ) + ( np.power(sigma,2) + np.power((mean),2) )/ 2 - 1/2
 
+
+def loglikelihoodlogisticregression(meas,model,beta):
+    # https://arunaddagatla.medium.com/maximum-likelihood-estimation-in-logistic-regression-f86ff1627b67
+    return np.sum(meas*beta*model - np.log(1 + np.exp(beta*model)))
+
+
 #value = KLgaussian(0,0,1,1)
-value = KLgaussianForMeanZeroAndStdOne(0,1)
+#value = KLgaussianForMeanZeroAndStdOne(0,1)
+value = loglikelihoodlogisticregression(0,1,1)
 print(value)
 
 

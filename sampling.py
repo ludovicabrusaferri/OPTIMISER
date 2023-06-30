@@ -1,26 +1,13 @@
 import numpy as np
-from scipy.special import expit
 
-def generate_samples(beta, alpha, num_samples):
-    num_components, num_features = beta.shape
-
-    samples = []
-    for _ in range(num_samples):
-        # Step 1: Assign samples to components based on mixture weights
-        component = np.random.choice(num_components, p=alpha)
-
-        # Step 2: Generate random input variables
-        random_input = np.random.randn(num_features)  # Assuming standard normal distribution
-
-        # Step 3: Calculate log-odds for the selected component
-        log_odds = np.dot(random_input, beta[component])
-
-        # Step 4: Convert log-odds to probabilities using the logistic function
-        probability = expit(log_odds)
-
-        # Step 5: Generate samples based on the probability
-        sample = np.random.uniform() <= probability
-        samples.append(sample)
+def sampling_function(meas, model, N_samples, beta, alpha=None):
+    if alpha is None:
+        # Sample from a logistic distribution
+        samples = np.random.logistic(scale=beta * model, size=N_samples)
+    else:
+        # Sample from a mixture logistic distribution
+        component_probabilities = alpha * 1 / (1 + np.exp(-beta * model))
+        component_indices = np.random.choice(len(alpha), size=N_samples, p=component_probabilities)
+        samples = np.random.logistic(scale=beta[component_indices] * model[component_indices])
 
     return samples
-

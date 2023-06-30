@@ -37,11 +37,11 @@ def KLgaussianForMeanZeroAndStdOne(mean,sigma):
     return np.log( 1 / sigma ) + ( np.power(sigma,2) + np.power((mean),2) )/ 2 - 1/2
 
 
-def logistic_mixture_log_likelihood(meas,model,beta):
+def logistic_log_likelihood(meas,model,beta):
     # https://arunaddagatla.medium.com/maximum-likelihood-estimation-in-logistic-regression-f86ff1627b67
     return np.sum(meas*beta*model - np.log(1 + np.exp(beta*model)))
 
-def TF_logistic_mixture_log_likelihood(meas, model, beta):
+def TF_logistic_log_likelihood(meas, model, beta):
     return tf.reduce_sum(meas * beta * model - tf.math.log(1 + tf.exp(beta * model)))
     
 

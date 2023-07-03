@@ -1,44 +1,54 @@
-import numpy as np
-
 def sample_from_logistic_distribution(location, scale, number_of_samples, alpha=None, threshold=None):
-    location = np.asarray(location)
-    scale = np.asarray(scale)
+    location = location.numpy()
+    scale = scale.numpy()
 
     if alpha is None:
         # Sample from a logistic distribution
-        samples = np.random.logistic(loc=location, scale=scale, size=number_of_samples)
+
+        samples = []
+
+        for i in range(number_of_samples):
+            samples.append(np.random.logistic(loc=location, scale=scale))
+
+        samples = np.array(samples)
     else:
-        alpha = np.asarray(alpha)
+        alpha = alpha.numpy()
 
         if threshold is None:
             # Sample from a mixture of logistic distributions
+
             components = len(alpha)
 
-            samples = np.zeros(number_of_samples)
-            component_indices = np.random.choice(components, size=number_of_samples, p=alpha)
+            samples = []
 
-            for i in range(components):
-                component_mask = (component_indices == i)
-                component_samples = np.random.logistic(loc=location[i], scale=scale[i], size=np.sum(component_mask))
-                samples[component_mask] = component_samples
+            for i in range(number_of_samples):
+                component_idx = np.random.choice(components, p=alpha)
 
+                samples.append(np.random.logistic(loc=location[component_idx], scale=scale[component_idx]))
+
+            samples = np.array(samples)
         else:
             # Sample from a discretised mixture logistic distribution
-            threshold = np.asarray(threshold)
+
+            threshold = threshold.numpy()
+
             components = len(alpha)
 
-            samples = np.zeros(number_of_samples)
-            component_indices = np.random.choice(components, size=number_of_samples, p=alpha)
-            uniform_samples = np.random.uniform(size=number_of_samples)
+            samples = []
 
-            for i in range(components):
-                component_mask = (component_indices == i)
-                component_samples = location[i] + (scale[i] * np.log(uniform_samples[component_mask] / (1 - uniform_samples[component_mask])))
-                samples[component_mask] = component_samples
+            for i in range(number_of_samples):
+                component_idx = np.random.choice(components, p=alpha)
+
+                uniform_samples = np.random.uniform()
+
+                samples.append(location[component_idx] + (scale[component_idx] *
+                                                          np.log(uniform_samples / (1 - uniform_samples))))
+
+            samples = np.array(samples)
 
             samples = np.where(samples < threshold, samples, threshold)
 
-    sample = np.mean(samples, axis=0)
+    samples = tf.convert_to_tensor(samples, dtype=dtype)
+    sample = tf.math.reduce_mean(samples, axis=0)
 
     return sample
-

@@ -36,38 +36,23 @@ def KLgaussianForMeanZeroAndStdOne(mean,sigma):
     # 𝐾𝐿(𝑝,𝑞)=log𝜎2𝜎1+𝜎21+(𝜇1−𝜇2)22𝜎22−12
     return np.log( 1 / sigma ) + ( np.power(sigma,2) + np.power((mean),2) )/ 2 - 1/2
 
-
-def logistic_log_likelihood(meas,model,beta):
+def logistic_log_likelihood(meas, mean, scale):
     # https://arunaddagatla.medium.com/maximum-likelihood-estimation-in-logistic-regression-f86ff1627b67
-    return np.sum(meas*beta*model - np.log(1 + np.exp(beta*model)))
+    # Calculate the log-likelihood of the measurements given the logistic distribution
+    return np.sum(-np.log(scale) - np.log(1 + np.exp((meas - mean) / scale)))
 
-def TF_logistic_log_likelihood(meas, model, beta):
-    return tf.reduce_sum(meas * beta * model - tf.math.log(1 + tf.exp(beta * model)))
+def TF_logistic_log_likelihood(meas, mean, scale):
+    return tf.reduce_sum(-tf.math.log(scale) - tf.math.log(1 + tf.exp((meas - mean) / scale)))
+
     
-
-def logistic_mixture_log_likelihood(meas,model,beta,alpha):
-    # https://arxiv.org/pdf/1802.10529.pdf
-    # meas, mode, alpha and beta must have the same lenght
-    return np.sum(np.sum(alpha*(np.sum(meas*beta*model - np.log(1 + np.exp(beta*model))))))
-  
-
-def TF_logistic_mixture_log_likelihood(meas, model, beta, alpha):
-    # Assumes meas, model, alpha, and beta have the same length
-    return tf.reduce_sum(alpha * tf.reduce_sum(meas * beta * model - tf.math.log(1 + tf.exp(beta * model)), axis=1))
-
-def discretized_logistic_mixture_log_likelihood(meas, model, beta, alpha, threshold=0.5):
-    probs = 1 / (1 + np.exp(-(meas * beta * model)))
-    epsilon = np.finfo(float).eps  # Get the machine epsilon for the dtype
-    y_pred = (probs >= threshold).astype(int)
-    return np.sum(alpha * (np.log(probs) * y_pred + np.log(1 - probs + epsilon) * (1 - y_pred)))
-
-
-def TF_discretized_logistic_mixture_log_likelihood(meas, model, beta, alpha, threshold=0.5):
-    probs = 1 / (1 + tf.exp(-(meas * beta * model)))
-    epsilon = tf.keras.backend.epsilon()  # Get the machine epsilon for the dtype
-    y_pred = tf.cast(probs >= threshold, dtype=tf.float32)
-    return tf.reduce_sum(alpha * (tf.math.log(probs) * y_pred + tf.math.log(1 - probs + epsilon) * (1 - y_pred)))
-
+def TF_misture_logistic_log_likelihood(meas, component_means, component_scales, alpha):
+    # Calculate the log-likelihood of the measurements given the mixture of logistic distributions
+    log_likelihoods = []
+    for i in range(len(component_means)):
+        log_likelihood_i = tf.reduce_sum(alpha[i] * (-tf.math.log(component_scales[i]) - tf.math.log(1 + tf.exp((meas - component_means[i]) / component_scales[i]))))
+        log_likelihoods.append(log_likelihood_i)
+    total_log_likelihood = tf.reduce_sum(log_likelihoods)
+    return total_log_likelihood.numpy()
 
 
 # Example usage

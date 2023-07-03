@@ -1,13 +1,14 @@
 import unittest
-import tensorflow as tf
-import tensorflow_probability as tfp
 import numpy as np
+from scipy.stats import logistic
 
-def TF_logistic_log_likelihood(meas, mean, scale):
-    meas = tf.cast(meas, tf.float32)
-    mean = tf.cast(mean, tf.float32)
-    scale = tf.cast(scale, tf.float32)
-    return tf.reduce_sum(-tf.math.log(scale) - tf.math.log(1 + tf.exp((meas - mean) / scale)))
+def scipy_logistic_log_likelihood(meas, loc, scale):
+    return np.sum(logistic.logpdf(meas, loc=loc, scale=scale))
+
+def numpy_logistic_log_likelihood(meas, mean, scale):
+    z = (meas - mean) / scale
+    log_likelihood = np.sum(-np.log(scale) - z - 2 * np.log(1 + np.exp(-z)))
+    return log_likelihood
 
 class TestLogisticLikelihood(unittest.TestCase):
     def test_logistic_likelihood(self):
@@ -18,20 +19,14 @@ class TestLogisticLikelihood(unittest.TestCase):
         true_scale = 1.5
         measurements = np.random.logistic(loc=true_mean, scale=true_scale, size=num_samples)
 
-        # Convert the measurements to a TensorFlow tensor of type tf.float64
-        meas_tensor = tf.convert_to_tensor(measurements, dtype=tf.float64)
+        # Compute the log-likelihood using the scipy function
+        scipy_log_likelihood = scipy_logistic_log_likelihood(measurements, true_mean, true_scale)
 
-        # Create the logistic distribution with the true parameters
-        logistic_dist = tfp.distributions.Logistic(loc=true_mean, scale=true_scale)
+        # Compute the log-likelihood using the numpy function
+        numpy_log_likelihood = numpy_logistic_log_likelihood(measurements, true_mean, true_scale)
 
-        # Compute the log-likelihood using the function under test
-        log_likelihood = TF_logistic_log_likelihood(meas_tensor, true_mean, true_scale)
-
-        # Compute the expected log-likelihood using the built-in log_prob() method of the distribution
-        expected_log_likelihood = tf.reduce_sum(logistic_dist.log_prob(meas_tensor))
-
-        # Check if the computed log-likelihood matches the expected log-likelihood
-        self.assertAlmostEqual(log_likelihood.numpy(), expected_log_likelihood.numpy(), delta=1e-2)
+        # Check if the computed log-likelihoods match
+        self.assertAlmostEqual(scipy_log_likelihood, numpy_log_likelihood, delta=1e-6)
 
 if __name__ == '__main__':
     unittest.main()

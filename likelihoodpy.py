@@ -54,6 +54,18 @@ def numpy_mixture_log_likelihood(meas, weights, means, scales):
         log_likelihoods += weights[i] * (-np.log(scales[i]) - z - 2 * np.log(1 + np.exp(-z)))
     return np.sum(log_likelihoods)
 
+def tf_logistic_log_likelihood(meas, mean, scale):
+    z = (meas - mean) / scale
+    log_likelihood = tf.reduce_sum(-tf.math.log(tf.cast(scale, tf.float64)) - z - 2 * tf.math.log(1 + tf.exp(-z)))
+    return log_likelihood
+
+
+def tf_mixture_log_likelihood(meas, weights, means, scales):
+    log_likelihoods = tf.zeros_like(meas)
+    for i in range(len(weights)):
+        z = (meas - means[i]) / scales[i]
+        log_likelihoods += weights[i] * (-tf.math.log(tf.cast(scales[i], tf.float64)) - z - 2 * tf.math.log(1 + tf.exp(-z)))
+    return tf.reduce_sum(log_likelihoods)
 
 # Example usage
 meas = np.array([[1, 2, 3], [3, 5, 6]])

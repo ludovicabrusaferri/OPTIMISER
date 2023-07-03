@@ -1,9 +1,7 @@
 import numpy as np
 
-def sampling_function(meas, model, N_samples, alpha=None, threshold=None):
+def sampling_function(meas, mean, sigma, N_samples, alpha=None, threshold=None):
     if alpha is None:
-        mean = model.mean()  # Get the mean from the model
-        sigma = model.std()  # Get the standard deviation from the model
         # Generate N_samples from a logistic distribution
         samples = np.random.logistic(loc=mean, scale=sigma, size=N_samples)
         return samples
@@ -11,8 +9,8 @@ def sampling_function(meas, model, N_samples, alpha=None, threshold=None):
     else:
         if threshold is None:
             # Sample from a mixture of logistic distributions
-            component_means = model.mean()  # Mean for each component
-            component_sigmas = model.std()  # Standard deviation for each component
+            component_means = mean  # Mean for each component
+            component_sigmas = sigma  # Standard deviation for each component
 
             # Choose component based on alpha probabilities
             components = np.random.choice(len(component_means), size=N_samples, p=alpha)

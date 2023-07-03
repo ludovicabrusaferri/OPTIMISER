@@ -36,15 +36,17 @@ def KLgaussianForMeanZeroAndStdOne(mean,sigma):
     # 𝐾𝐿(𝑝,𝑞)=log𝜎2𝜎1+𝜎21+(𝜇1−𝜇2)22𝜎22−12
     return np.log( 1 / sigma ) + ( np.power(sigma,2) + np.power((mean),2) )/ 2 - 1/2
 
+
 def logistic_log_likelihood(meas, mean, scale):
-    # https://arunaddagatla.medium.com/maximum-likelihood-estimation-in-logistic-regression-f86ff1627b67
-    # Calculate the log-likelihood of the measurements given the logistic distribution
-    return np.sum(-np.log(scale) - np.log(1 + np.exp((meas - mean) / scale)))
+    z = (meas - mean) / scale
+    log_likelihood = np.sum(-np.log(scale) - z - 2 * np.log(1 + np.exp(-z)))
+    return log_likelihood
 
 def TF_logistic_log_likelihood(meas, mean, scale):
-    return tf.reduce_sum(-tf.math.log(scale) - tf.math.log(1 + tf.exp((meas - mean) / scale)))
-
-    
+    z = (meas - mean) / scale
+    log_likelihood = tf.reduce_sum(-tf.math.log(scale) - z - 2 * tf.math.log(1 + tf.exp(-z)))
+    return log_likelihood
+  
 #def TF_misture_logistic_log_likelihood(meas, component_means, component_scales, alpha):
  #   # Calculate the log-likelihood of the measurements given the mixture of logistic distributions
   #  log_likelihoods = []

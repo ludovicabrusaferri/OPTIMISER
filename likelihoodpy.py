@@ -37,24 +37,22 @@ def KLgaussianForMeanZeroAndStdOne(mean,sigma):
     return np.log( 1 / sigma ) + ( np.power(sigma,2) + np.power((mean),2) )/ 2 - 1/2
 
 
-def logistic_log_likelihood(meas, mean, scale):
+def scipy_logistic_log_likelihood(meas, loc, scale):
+    return np.sum(logistic.logpdf(meas, loc=loc, scale=scale))
+
+
+def numpy_logistic_log_likelihood(meas, mean, scale):
     z = (meas - mean) / scale
     log_likelihood = np.sum(-np.log(scale) - z - 2 * np.log(1 + np.exp(-z)))
     return log_likelihood
 
-def TF_logistic_log_likelihood(meas, mean, scale):
-    z = (meas - mean) / scale
-    log_likelihood = tf.reduce_sum(-tf.math.log(scale) - z - 2 * tf.math.log(1 + tf.exp(-z)))
-    return log_likelihood
-  
-#def TF_misture_logistic_log_likelihood(meas, component_means, component_scales, alpha):
- #   # Calculate the log-likelihood of the measurements given the mixture of logistic distributions
-  #  log_likelihoods = []
-   # for i in range(len(component_means)):
-    #    log_likelihood_i = tf.reduce_sum(alpha[i] * (-tf.math.log(component_scales[i]) - tf.math.log(1 + tf.exp((meas - component_means[i]) / component_scales[i]))))
-     #   log_likelihoods.append(log_likelihood_i)
-    #total_log_likelihood = tf.reduce_sum(log_likelihoods)
-    #return total_log_likelihood.numpy()
+
+def numpy_mixture_log_likelihood(meas, weights, means, scales):
+    log_likelihoods = np.zeros_like(meas)
+    for i in range(len(weights)):
+        z = (meas - means[i]) / scales[i]
+        log_likelihoods += weights[i] * (-np.log(scales[i]) - z - 2 * np.log(1 + np.exp(-z)))
+    return np.sum(log_likelihoods)
 
 
 # Example usage

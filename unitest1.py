@@ -3,6 +3,10 @@ import numpy as np
 from scipy.stats import logistic
 
 
+def scipy_logistic_log_likelihood(meas, loc, scale):
+    return np.sum(logistic.logpdf(meas, loc=loc, scale=scale))
+
+
 def numpy_logistic_log_likelihood(meas, mean, scale):
     z = (meas - mean) / scale
     log_likelihood = np.sum(-np.log(scale) - z - 2 * np.log(1 + np.exp(-z)))
@@ -32,8 +36,14 @@ class TestLogisticLikelihood(unittest.TestCase):
         # Compute the log-likelihood using the numpy mixture function with weights=[1]
         numpy_mixture_likelihood = numpy_mixture_log_likelihood(measurements, [1], [true_mean], [true_scale])
 
+        # Compute the log-likelihood using the scipy logistic function
+        scipy_logistic_likelihood = scipy_logistic_log_likelihood(measurements, true_mean, true_scale)
+
         # Check if the numpy logistic log-likelihood matches the numpy mixture log-likelihood
         self.assertAlmostEqual(numpy_logistic_likelihood, numpy_mixture_likelihood, delta=1e-6)
+
+        # Check if the numpy logistic log-likelihood matches the scipy logistic log-likelihood
+        self.assertAlmostEqual(numpy_logistic_likelihood, scipy_logistic_likelihood, delta=1e-6)
 
 
 if __name__ == '__main__':

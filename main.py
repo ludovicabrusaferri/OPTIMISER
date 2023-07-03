@@ -45,14 +45,14 @@ def TF_logistic_log_likelihood(meas, mean, scale):
     return tf.reduce_sum(-tf.math.log(scale) - tf.math.log(1 + tf.exp((meas - mean) / scale)))
 
     
-def TF_misture_logistic_log_likelihood(meas, component_means, component_scales, alpha):
-    # Calculate the log-likelihood of the measurements given the mixture of logistic distributions
-    log_likelihoods = []
-    for i in range(len(component_means)):
-        log_likelihood_i = tf.reduce_sum(alpha[i] * (-tf.math.log(component_scales[i]) - tf.math.log(1 + tf.exp((meas - component_means[i]) / component_scales[i]))))
-        log_likelihoods.append(log_likelihood_i)
-    total_log_likelihood = tf.reduce_sum(log_likelihoods)
-    return total_log_likelihood.numpy()
+#def TF_misture_logistic_log_likelihood(meas, component_means, component_scales, alpha):
+ #   # Calculate the log-likelihood of the measurements given the mixture of logistic distributions
+  #  log_likelihoods = []
+   # for i in range(len(component_means)):
+    #    log_likelihood_i = tf.reduce_sum(alpha[i] * (-tf.math.log(component_scales[i]) - tf.math.log(1 + tf.exp((meas - component_means[i]) / component_scales[i]))))
+     #   log_likelihoods.append(log_likelihood_i)
+    #total_log_likelihood = tf.reduce_sum(log_likelihoods)
+    #return total_log_likelihood.numpy()
 
 
 # Example usage

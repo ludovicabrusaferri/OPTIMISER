@@ -93,5 +93,5 @@ def main():
     print("Predicted Scale:", y_pred_scale)
 
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     main()

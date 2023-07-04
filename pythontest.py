@@ -1,74 +1,97 @@
-import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import minimize
+import tensorflow as tf
 
-def logistic_log_likelihood(data, location, scale):
-    data = tf.cast(data, dtype=tf.double)
-    location = tf.cast(location, dtype=tf.double)
-    scale = tf.cast(scale, dtype=tf.double)
 
-    log_likelihood = tf.reduce_sum(-tf.math.log(scale) - (data - location) / scale - 2 * tf.math.log(1 + tf.exp(-(data - location) / scale)))
-    return log_likelihood
+dtype = tf.float32
 
-def sample_from_logistic_distribution(location, scale, num_samples):
-    uniform_samples = tf.random.uniform((num_samples,), dtype=tf.float32)
-    samples = location + scale * tf.math.log(1.0 / uniform_samples - 1.0)
+
+def logistic_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale):
+    y_true = tf.cast(y_true, dtype=tf.float32)
+    y_pred_location = tf.cast(y_pred_location, dtype=tf.float32)
+    y_pred_scale = tf.cast(y_pred_scale, dtype=tf.float32)
+
+    loss = - tf.math.reduce_mean(((-tf.math.log(y_pred_scale)) - ((y_true - y_pred_location) / y_pred_scale)) -
+                                 (2.0 * tf.math.log(1.0 + tf.exp((-(y_true - y_pred_location)) / y_pred_scale))))
+    loss = tf.cast(loss, dtype=dtype)
+
+    return loss
+
+
+def sample_from_logistic_distribution(location, scale, number_of_samples):
+    location = tf.cast(location, dtype=tf.float32)
+    scale = tf.cast(scale, dtype=tf.float32)
+
+    samples = location + (scale * tf.math.log((1.0 / tf.random.uniform((number_of_samples,))) - 1.0))
+    samples = tf.cast(samples, dtype=dtype)
+
     return samples
 
-# True parameters
-true_location = 10
-true_scale = 5
-num_samples = 10000
 
-# Generate true data
-true_data = sample_from_logistic_distribution(true_location, true_scale, num_samples)
+def main():
+    # True parameters
+    y_true_location = 10.0
+    y_true_scale = 2.0
+    number_of_samples = 32768
+    number_of_iterations = 32768
 
-# Optimization to estimate the expected value
-initial_guess = [5, 1]
+    # Generate true data
+    y_true = sample_from_logistic_distribution(y_true_location, y_true_scale, number_of_samples)
 
-def objective(params):
-    location = params[0]
-    scale = params[1]
-    return -logistic_log_likelihood(true_data, location, scale)
+    # Optimization to estimate the expected value
+    initial_y_pred_location = 0.0
+    initial_y_pred_scale = 1.0
 
-bounds = [(0.01, 100), (0.01, 100)]  # Boundaries for location and scale
+    y_pred_location = tf.Variable(initial_y_pred_location, name="y_pred_location", trainable=True, dtype=dtype)
+    y_pred_scale = tf.Variable(initial_y_pred_scale, name="y_pred_scale", trainable=True, dtype=dtype)
 
-result = minimize(objective, initial_guess, bounds=bounds)
-estimated_location, estimated_scale = result.x
+    optimiser = tf.optimizers.Adam(amsgrad=True)
 
-# Generate estimated data using the estimated parameters
-estimated_data = sample_from_logistic_distribution(estimated_location, estimated_scale, num_samples)
+    for i in range(number_of_iterations):
+        with tf.GradientTape() as tape:
+            loss = logistic_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale)
 
-# Plot the true and estimated distributions
-num_bins = 50
-x = np.linspace(np.min(true_data), np.max(true_data), num_bins)
-true_pdf, _ = np.histogram(true_data, bins=x, density=True)
-estimated_pdf, _ = np.histogram(estimated_data, bins=x, density=True)
+        print("Iteration: {0}, Loss: {1}".format(str(i + 1), str(loss.numpy())))
 
-plt.figure(figsize=(10, 8))
-plt.plot(x[:-1], true_pdf, 'r', linewidth=2, label='True Distribution')
-plt.plot(x[:-1], estimated_pdf, 'b', linewidth=2, label='Estimated Distribution')
+        gradients = tape.gradient(loss, [y_pred_location, y_pred_scale])
+        gradients, _ = tf.clip_by_global_norm(gradients, 1.0)
+        optimiser.apply_gradients(zip(gradients, [y_pred_location, y_pred_scale]))
 
-# Plot initial value
-initial_data = sample_from_logistic_distribution(initial_guess[0], initial_guess[1], num_samples)
-initial_pdf, _ = np.histogram(initial_data, bins=x, density=True)
-plt.plot(x[:-1], initial_pdf, 'g--', linewidth=2, label='Initial Distribution')
+    y_pred_location = y_pred_location.numpy()
+    y_pred_scale = y_pred_scale.numpy()
 
-# Plot first iteration
-first_iteration_data = sample_from_logistic_distribution(result.x[0], result.x[1], num_samples)
-first_iteration_pdf, _ = np.histogram(first_iteration_data, bins=x, density=True)
-#plt.plot(x[:-1], first_iteration_pdf, 'm--', linewidth=2, label='First Iteration Distribution')
+    # Generate predicted data using the predicted parameters
+    estimated_data = sample_from_logistic_distribution(y_pred_location, y_pred_scale, number_of_samples)
 
-plt.legend(fontsize=12)
-plt.xlabel('Data', fontsize=12)
-plt.ylabel('Probability Density', fontsize=12)
-plt.title('True and Estimated Logistic Distributions', fontsize=14)
+    # Plot the true and predicted distributions
+    num_bins = 50
+    x = np.linspace(np.min(y_true), np.max(y_true), num_bins)
+    true_pdf, _ = np.histogram(y_true, bins=x, density=True)
+    estimated_pdf, _ = np.histogram(estimated_data, bins=x, density=True)
 
-# Save the plot as a JPEG image
-plt.savefig('distributions.jpg')
+    plt.figure(figsize=(10, 8))
+    plt.plot(x[:-1], true_pdf, 'r', linewidth=2, label="True Distribution")
+    plt.plot(x[:-1], estimated_pdf, 'b', linewidth=2, label="Predicted Distribution")
 
-# Print the estimated parameters
-print("Estimated Location:", estimated_location)
-print("Estimated Scale:", estimated_scale)
+    # Plot initial value
+    initial_data = sample_from_logistic_distribution(initial_y_pred_location, initial_y_pred_scale, number_of_samples)
+    initial_pdf, _ = np.histogram(initial_data, bins=x, density=True)
+    plt.plot(x[:-1], initial_pdf, 'g--', linewidth=2, label="Initial Distribution")
 
+    plt.legend(fontsize=12)
+    plt.xlabel("Data", fontsize=12)
+    plt.ylabel("Probability Density", fontsize=12)
+    plt.title("True and Predicted Logistic Distributions", fontsize=12)
+
+    # Save the plot as a PNG image
+    plt.savefig("distributions.png")
+
+    # Print the estimated parameters
+    print("True Location:", y_true_location)
+    print("True Scale:", y_true_scale)
+    print("Predicted Location:", y_pred_location)
+    print("Predicted Scale:", y_pred_scale)
+
+
+if _name_ == '_main_':
+    main()

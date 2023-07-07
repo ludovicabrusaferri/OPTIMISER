@@ -6,6 +6,18 @@ import math
 dtype = tf.float32
 
 
+def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma):
+    N = len(data)
+    log_likelihood = 0
+    for i in range(N):
+        log_likelihood = log_likelihood - 0.5 * ((data[i] - mu)**2 / (2 * sigma**2) + tf.math.log(tf.sqrt(2 * math.pi) * sigma))
+    return -log_likelihood
+
+
+def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples):
+    epsilon = tf.random.normal((num_samples,), dtype=tf.float32)  # Generate samples from standard normal distribution
+    samples = tf.round(mu + sigma * epsilon)  # Apply rounding operation
+    return samples
 
 def gaussian_negative_log_likelihood_loss(y_true, y_pred_mean, y_pred_std_dev):
     y_true = tf.cast(y_true, dtype=tf.float32)
@@ -61,7 +73,7 @@ def main():
     number_of_iterations = 32768
 
     # Generate true data
-    y_true = sample_from_gaussian_distribution(y_true_location, y_true_scale, number_of_samples)
+    y_true = sample_from_discretized_gaussian_distribution(y_true_location, y_true_scale, number_of_samples)
 
     # Optimization to estimate the expected value
     initial_y_pred_location = 1
@@ -74,7 +86,7 @@ def main():
 
     for i in range(number_of_iterations):
         with tf.GradientTape() as tape:
-            loss = gaussian_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale)
+            loss = discretized_gaussian_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale)
 
         print("Iteration: {0}, Loss: {1}".format(str(i + 1), str(loss.numpy())))
 
@@ -86,7 +98,7 @@ def main():
     y_pred_scale = y_pred_scale.numpy()
 
     # Generate predicted data using the predicted parameters
-    estimated_data = sample_from_gaussian_distribution(y_pred_location, y_pred_scale, number_of_samples)
+    estimated_data = sample_from_discretized_gaussian_distribution(y_pred_location, y_pred_scale, number_of_samples)
 
     # Plot the true and predicted distributions
     num_bins = 50
@@ -99,7 +111,7 @@ def main():
     plt.plot(x[:-1], estimated_pdf, 'b', linewidth=2, label="Predicted Distribution")
 
     # Plot initial value
-    initial_data = sample_from_gaussian_distribution(initial_y_pred_location, initial_y_pred_scale, number_of_samples)
+    initial_data = sample_from_discretized_gaussian_distribution(initial_y_pred_location, initial_y_pred_scale, number_of_samples)
     initial_pdf, _ = np.histogram(initial_data, bins=x, density=True)
     plt.plot(x[:-1], initial_pdf, 'g--', linewidth=2, label="Initial Distribution")
 

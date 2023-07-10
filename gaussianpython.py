@@ -16,15 +16,15 @@ dtype = tf.float32
    # samples = np.clip(samples, -M, M)  # Truncate values within the shifted boundaries
    # return samples
 
-def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, M):
-    data_i = tf.clip_by_value(data, -M, M)  # Truncate data within the shifted boundaries
+def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, Mlow, Mup):
+    data_i = tf.clip_by_value(data, -Mlow, Mup)  # Truncate data within the shifted boundaries
     log_likelihood = tf.reduce_sum(-0.5 * ((data_i - mu)**2 / (2*sigma**2) + tf.math.log(tf.sqrt(2*np.pi)*sigma)))
     return -log_likelihood
 
-def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples, M):
+def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples, Mlow, Mup):
     epsilon = tf.random.normal(shape=(num_samples,))  # Generate samples from standard normal distribution
     samples = tf.round(mu + sigma * epsilon)  # Apply rounding operation
-    samples = tf.clip_by_value(samples, -M, M)  # Truncate values within the shifted boundaries
+    samples = tf.clip_by_value(samples, -Mlow, Mup)  # Truncate values within the shifted boundaries
     return samples
 
 
@@ -76,40 +76,43 @@ def sample_from_gaussian_distribution(mean, std_dev, num_samples):
 
 def main():
     # True parameters
-    y_true_location = 10
+    y_true_location = 20
     y_true_scale = 50
     number_of_samples = 32768
     number_of_iterations = 32768
-    y_true_M=200
+    y_true_Mup = 100
+    y_true_Mlow = 300
     # Generate true data
-    y_true = sample_from_discretized_gaussian_distribution(y_true_location, y_true_scale, number_of_samples,y_true_M)
+    y_true = sample_from_discretized_gaussian_distribution(y_true_location, y_true_scale, number_of_samples,y_true_Mlow,y_true_Mup)
 
     # Optimization to estimate the expected value
-    initial_y_pred_location = 1
-    initial_y_pred_scale = 1
-    initial_y_pred_M = 1000
+    initial_y_pred_location = 10
+    initial_y_pred_scale = 10
+    initial_y_pred_Mup = 1000
+    initial_y_pred_Mlow = 1000 
 
     y_pred_location = tf.Variable(initial_y_pred_location, name="y_pred_location", trainable=True, dtype=dtype)
     y_pred_scale = tf.Variable(initial_y_pred_scale, name="y_pred_scale", trainable=True, dtype=dtype)
-    y_pred_M = tf.Variable(initial_y_pred_M, name="y_pred_M", trainable=True, dtype=dtype)
+    y_pred_Mup = tf.Variable(initial_y_pred_Mup, name="y_pred_Mup", trainable=True, dtype=dtype)
+    y_pred_Mlow = tf.Variable(initial_y_pred_Mlow, name="y_pred_Mlow", trainable=True, dtype=dtype)
 
     optimiser = tf.optimizers.Adam(amsgrad=True)
 
     for i in range(number_of_iterations):
         with tf.GradientTape() as tape:
-            loss = discretized_gaussian_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale, y_pred_M)
+            loss = discretized_gaussian_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale, y_pred_Mlow, y_pred_Mup)
 
         print("Iteration: {0}, Loss: {1}".format(str(i + 1), str(loss.numpy())))
 
-        gradients = tape.gradient(loss, [y_pred_location, y_pred_scale, y_pred_M])
+        gradients = tape.gradient(loss, [y_pred_location, y_pred_scale, y_pred_Mlow, y_pred_Mup])
         gradients, _ = tf.clip_by_global_norm(gradients, 1.0)
-        optimiser.apply_gradients(zip(gradients, [y_pred_location, y_pred_scale, y_pred_M]))
+        optimiser.apply_gradients(zip(gradients, [y_pred_location, y_pred_scale, y_pred_Mlow, y_pred_Mup]))
 
     y_pred_location = y_pred_location.numpy()
     y_pred_scale = y_pred_scale.numpy()
 
     # Generate predicted data using the predicted parameters
-    estimated_data = sample_from_discretized_gaussian_distribution(y_pred_location, y_pred_scale, number_of_samples, y_pred_M)
+    estimated_data = sample_from_discretized_gaussian_distribution(y_pred_location, y_pred_scale, number_of_samples, y_pred_Mlow, y_pred_Mup)
 
     # Plot the true and predicted distributions
     num_bins = 50
@@ -122,7 +125,7 @@ def main():
     plt.plot(x[:-1], estimated_pdf, 'b', linewidth=2, label="Predicted Distribution")
 
     # Plot initial value
-    initial_data = sample_from_discretized_gaussian_distribution(initial_y_pred_location, initial_y_pred_scale, number_of_samples, initial_y_pred_M)
+    initial_data = sample_from_discretized_gaussian_distribution(initial_y_pred_location, initial_y_pred_scale, number_of_samples, initial_y_pred_Mlow, initial_y_pred_Mup)
     initial_pdf, _ = np.histogram(initial_data, bins=x, density=True)
     plt.plot(x[:-1], initial_pdf, 'g--', linewidth=2, label="Initial Distribution")
 

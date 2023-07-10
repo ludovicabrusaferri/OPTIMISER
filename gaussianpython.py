@@ -6,18 +6,19 @@ import math
 dtype = tf.float32
 
 
-def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma):
-    N = len(data)
-    log_likelihood = 0
-    for i in range(N):
-        log_likelihood = log_likelihood - 0.5 * ((data[i] - mu)**2 / (2 * sigma**2) + tf.math.log(tf.sqrt(2 * math.pi) * sigma))
+import numpy as np
+
+def discretized_gaussian_negative_log_likelihood(data, mu, sigma, M):
+    data_i = np.clip(data, -M, M)  # Truncate data within the shifted boundaries
+    log_likelihood = np.sum(-0.5 * ((data_i - mu)**2 / (2*sigma**2) + np.log(np.sqrt(2*np.pi)*sigma)))
     return -log_likelihood
 
-
-def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples):
-    epsilon = tf.random.normal((num_samples,), dtype=tf.float32)  # Generate samples from standard normal distribution
-    samples = tf.round(mu + sigma * epsilon)  # Apply rounding operation
+def discrete_gaussian_sampling(mu, sigma, num_samples, M):
+    epsilon = np.random.randn(num_samples)  # Generate samples from standard normal distribution
+    samples = np.round(mu + sigma * epsilon)  # Apply rounding operation
+    samples = np.clip(samples, -M, M)  # Truncate values within the shifted boundaries
     return samples
+
 
 def gaussian_negative_log_likelihood_loss(y_true, y_pred_mean, y_pred_std_dev):
     y_true = tf.cast(y_true, dtype=tf.float32)

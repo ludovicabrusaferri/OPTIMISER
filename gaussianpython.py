@@ -5,9 +5,6 @@ import math
 
 dtype = tf.float32
 
-
-import numpy as np
-
 #def discretized_gaussian_negative_log_likelihood(data, mu, sigma, M):
  #   data_i = np.clip(data, -M, M)  # Truncate data within the shifted boundaries
   #  log_likelihood = np.sum(-0.5 * ((data_i - mu)**2 / (2*sigma**2) + np.log(np.sqrt(2*np.pi)*sigma)))
@@ -18,8 +15,6 @@ import numpy as np
   #  samples = np.round(mu + sigma * epsilon)  # Apply rounding operation
    # samples = np.clip(samples, -M, M)  # Truncate values within the shifted boundaries
    # return samples
-
-import tensorflow as tf
 
 def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, M):
     data_i = tf.clip_by_value(data, -M, M)  # Truncate data within the shifted boundaries
@@ -90,9 +85,9 @@ def main():
     y_true = sample_from_discretized_gaussian_distribution(y_true_location, y_true_scale, number_of_samples,y_true_M)
 
     # Optimization to estimate the expected value
-    initial_y_pred_location = 1
-    initial_y_pred_scale = 1
-    initial_y_pred_M = 22
+    initial_y_pred_location = 2
+    initial_y_pred_scale = 8
+    initial_y_pred_M = 30
 
     y_pred_location = tf.Variable(initial_y_pred_location, name="y_pred_location", trainable=True, dtype=dtype)
     y_pred_scale = tf.Variable(initial_y_pred_scale, name="y_pred_scale", trainable=True, dtype=dtype)

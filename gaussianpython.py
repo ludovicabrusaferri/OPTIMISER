@@ -122,7 +122,7 @@ def main():
     plt.plot(x[:-1], estimated_pdf, 'b', linewidth=2, label="Predicted Distribution")
 
     # Plot initial value
-    initial_data = sample_from_discretized_gaussian_distribution(initial_y_pred_location, initial_y_pred_scale, number_of_samples, initial_y_M)
+    initial_data = sample_from_discretized_gaussian_distribution(initial_y_pred_location, initial_y_pred_scale, number_of_samples, initial_y_pred_M)
     initial_pdf, _ = np.histogram(initial_data, bins=x, density=True)
     plt.plot(x[:-1], initial_pdf, 'g--', linewidth=2, label="Initial Distribution")
 

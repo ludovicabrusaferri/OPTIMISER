@@ -17,14 +17,14 @@ dtype = tf.float32
    # return samples
 
 def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, Mlow, Mup):
-    data_i = tf.clip_by_value(data, -Mlow, Mup)  # Truncate data within the shifted boundaries
+    data_i = tf.clip_by_value(data, Mlow, Mup)  # Truncate data within the shifted boundaries
     log_likelihood = tf.reduce_sum(-0.5 * ((data_i - mu)**2 / (2*sigma**2) + tf.math.log(tf.sqrt(2*np.pi)*sigma)))
     return -log_likelihood
 
 def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples, Mlow, Mup):
     epsilon = tf.random.normal(shape=(num_samples,))  # Generate samples from standard normal distribution
     samples = tf.round(mu + sigma * epsilon)  # Apply rounding operation
-    samples = tf.clip_by_value(samples, -Mlow, Mup)  # Truncate values within the shifted boundaries
+    samples = tf.clip_by_value(samples, Mlow, Mup)  # Truncate values within the shifted boundaries
     return samples
 
 
@@ -81,15 +81,15 @@ def main():
     number_of_samples = 32768
     number_of_iterations = 32768
     y_true_Mup = 100
-    y_true_Mlow = 300
+    y_true_Mlow = -300
     # Generate true data
     y_true = sample_from_discretized_gaussian_distribution(y_true_location, y_true_scale, number_of_samples,y_true_Mlow,y_true_Mup)
 
     # Optimization to estimate the expected value
     initial_y_pred_location = 10
-    initial_y_pred_scale = 10
+    initial_y_pred_scale = 20
     initial_y_pred_Mup = 1000
-    initial_y_pred_Mlow = 1000 
+    initial_y_pred_Mlow = -1000 
 
     y_pred_location = tf.Variable(initial_y_pred_location, name="y_pred_location", trainable=True, dtype=dtype)
     y_pred_scale = tf.Variable(initial_y_pred_scale, name="y_pred_scale", trainable=True, dtype=dtype)

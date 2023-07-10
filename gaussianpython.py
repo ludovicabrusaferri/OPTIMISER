@@ -17,16 +17,58 @@ dtype = tf.float32
    # samples = np.clip(samples, -M, M)  # Truncate values within the shifted boundaries
    # return samples
 
-def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, Mlow, Mup):
-    data_i = np.clip(data, Mlow, Mup)
-    log_likelihood = tf.reduce_sum(-0.5 * ((data - mu)**2 / (2*sigma**2) + tf.math.log(tf.sqrt(2*np.pi)*sigma)))
-    return -log_likelihood
+#def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, Mlow, Mup):
+ #   data_i = np.clip(data, Mlow, Mup)
+  #  log_likelihood = tf.reduce_sum(-0.5 * ((data - mu)**2 / (2*sigma**2) + tf.math.log(tf.sqrt(2*np.pi)*sigma)))
+   # return -log_likelihood
+
+#def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples, Mlow, Mup):
+ #   epsilon = tf.random.normal(shape=(num_samples,))  # Generate samples from standard normal distribution
+  #  samples = tf.round(mu + sigma * epsilon)  # Apply rounding operation
+   # samples = tf.clip_by_value(samples, Mlow, Mup)  # Truncate values within the shifted boundaries
+    #return samples
+
 
 def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples, Mlow, Mup):
-    epsilon = tf.random.normal(shape=(num_samples,))  # Generate samples from standard normal distribution
+    epsilon = tf.random.normal(shape=(1, num_samples))  # Generate samples from standard normal distribution
     samples = tf.round(mu + sigma * epsilon)  # Apply rounding operation
-    samples = tf.clip_by_value(samples, Mlow, Mup)  # Truncate values within the shifted boundaries
-    return samples
+    
+    # Initialize the counter for rejections outside truncation bounds
+    num_rejections = tf.constant(0, dtype=tf.float32)
+    
+    # Check each sample and count the rejections
+    for i in range(num_samples):
+        if samples[0, i] < -Mlow or samples[0, i] > Mup:
+            num_rejections += 1.0
+    
+    # Truncate the samples to the specified bounds
+    samples = tf.maximum(samples, -Mlow)
+    samples = tf.minimum(samples, Mup)
+    
+    # Compute the correction factor
+    correction_factor = num_rejections / tf.cast(num_samples, dtype=tf.float32)
+    
+    return samples, correction_factor
+
+
+def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, num_samples, Mlow, Mup):
+    samples, correction_factor = sample_from_discretized_gaussian_distribution(mu, sigma, num_samples, Mlow, Mup)
+    eps = 1e-09
+    
+    # Truncate the data to the specified bounds
+    data = tf.maximum(data, -Mlow)
+    data = tf.minimum(data, Mup)
+    
+    # Calculate the log-likelihood
+    log_likelihood = tf.reduce_sum(
+        -0.5 * ((data - mu)**2 / (2 * sigma**2) + tf.math.log(tf.sqrt(2 * np.pi) * sigma))
+    ) - tf.math.log(correction_factor + eps)
+    
+    return -log_likelihood
+
+
+
+
 
 
 def gaussian_negative_log_likelihood_loss(y_true, y_pred_mean, y_pred_std_dev):
@@ -77,20 +119,20 @@ def sample_from_gaussian_distribution(mean, std_dev, num_samples):
 
 def main():
     # True parameters
-    y_true_location = 20
+    y_true_location = 80
     y_true_scale = 50
     number_of_samples = 32768
     number_of_iterations = 32768
-    y_true_Mup = 100
-    y_true_Mlow = -300
+    y_true_Mup = 200
+    y_true_Mlow = 0
     # Generate true data
     y_true = sample_from_discretized_gaussian_distribution(y_true_location, y_true_scale, number_of_samples,y_true_Mlow,y_true_Mup)
 
     # Optimization to estimate the expected value
-    initial_y_pred_location = 10
+    initial_y_pred_location = 100
     initial_y_pred_scale = 20
     initial_y_pred_Mup = 1000
-    initial_y_pred_Mlow = -1000 
+    initial_y_pred_Mlow = 1000 
 
     y_pred_location = tf.Variable(initial_y_pred_location, name="y_pred_location", trainable=True, dtype=dtype)
     y_pred_scale = tf.Variable(initial_y_pred_scale, name="y_pred_scale", trainable=True, dtype=dtype)
@@ -101,7 +143,7 @@ def main():
 
     for i in range(number_of_iterations):
         with tf.GradientTape() as tape:
-            loss = discretized_gaussian_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale, y_pred_Mlow, y_pred_Mup)
+            loss = discretized_gaussian_negative_log_likelihood_loss(y_true, y_pred_location, y_pred_scale, number_of_samples,y_pred_Mlow, y_pred_Mup)
 
         print("Iteration: {0}, Loss: {1}".format(str(i + 1), str(loss.numpy())))
 

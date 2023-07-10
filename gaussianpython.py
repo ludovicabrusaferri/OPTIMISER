@@ -77,17 +77,17 @@ def sample_from_gaussian_distribution(mean, std_dev, num_samples):
 def main():
     # True parameters
     y_true_location = 10
-    y_true_scale = 5
+    y_true_scale = 50
     number_of_samples = 32768
     number_of_iterations = 32768
-    y_true_M=20
+    y_true_M=200
     # Generate true data
     y_true = sample_from_discretized_gaussian_distribution(y_true_location, y_true_scale, number_of_samples,y_true_M)
 
     # Optimization to estimate the expected value
-    initial_y_pred_location = 2
-    initial_y_pred_scale = 8
-    initial_y_pred_M = 30
+    initial_y_pred_location = 1
+    initial_y_pred_scale = 1
+    initial_y_pred_M = 1000
 
     y_pred_location = tf.Variable(initial_y_pred_location, name="y_pred_location", trainable=True, dtype=dtype)
     y_pred_scale = tf.Variable(initial_y_pred_scale, name="y_pred_scale", trainable=True, dtype=dtype)

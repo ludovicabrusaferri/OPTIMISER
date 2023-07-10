@@ -17,8 +17,12 @@ dtype = tf.float32
    # return samples
 
 def discretized_gaussian_negative_log_likelihood_loss(data, mu, sigma, Mlow, Mup):
-    data_i = tf.clip_by_value(data, Mlow, Mup)  # Truncate data within the shifted boundaries
-    log_likelihood = tf.reduce_sum(-0.5 * ((data_i - mu)**2 / (2*sigma**2) + tf.math.log(tf.sqrt(2*np.pi)*sigma)))
+    log_likelihood = tf.reduce_sum(-0.5 * ((data - mu)**2 / (2*sigma**2) + tf.math.log(tf.sqrt(2*np.pi)*sigma)))
+    cdf_Mlow = norm.cdf(Mlow, mu, sigma)
+    cdf_Mup = norm.cdf(Mup, mu, sigma)
+    correction_factor = 1 - (cdf_Mup - cdf_Mlow)
+
+    log_likelihood = log_likelihood + tf.math.log(correction_factor)
     return -log_likelihood
 
 def sample_from_discretized_gaussian_distribution(mu, sigma, num_samples, Mlow, Mup):

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import math
+from scipy.stats import norm
 
 dtype = tf.float32
 
